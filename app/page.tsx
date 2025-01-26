@@ -6,12 +6,15 @@ import verify from "./images/verify@2xrl.webp";
 import userButton2 from "./images/user-button-2@2xrl.webp";
 import signUp from "./images/sign-up@2xrl.webp";
 import logo from "./images/logo.png";
+import { ClerkProvider } from "@clerk/clerk-react";
 import "./home.css";
 import Image from "next/image";
 import Link from "next/link";
 import { ClerkLogo } from "./components/clerk-logo";
 import { NextLogo } from "./components/next-logo";
 import React from "react";
+
+const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 export default function Home() {
   return (
