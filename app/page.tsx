@@ -2,10 +2,10 @@
 import { SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
 import { ClerkProvider } from "@clerk/clerk-react";
 import "./home.css";
-import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
 import React, { useState } from "react";
-const db = drizzle(process.env.DATABASE_URL!);
+import { v4 as uuidv4 } from "uuid";
+import { generate_transcript } from "./components/generate-embeddings";
 
 const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -22,7 +22,7 @@ export default function Home() {
     }
 
     if (video.type !== "video/mp4") {
-      console.log("Invalid file type. Please select a video file.");
+      console.log("Invalid file type. Please select a video file."); //Upload a video to the website through a button
       return;
     }
     setVideoName(video.name);
@@ -38,18 +38,20 @@ export default function Home() {
     });
 
     const response = await fetch("/api/upload-videos", {
+      //Add video to blob
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         file: base64,
-        contentType: video.type, // Video MIME type, e.g., "video/mp4"
+        contentType: video.type,
       }),
     });
 
     console.log(response);
   }
+
   const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const target = e.target;
 

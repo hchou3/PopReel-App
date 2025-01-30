@@ -6,21 +6,26 @@ import {
   text,
   vector,
   json,
+  uuid,
 } from "drizzle-orm/pg-core";
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
 
-const db = drizzle(process.env.DATABASE_URL!);
-
 export const videos = pgTable("videos", {
-  id: integer("id").primaryKey(),
+  id: uuid("id").defaultRandom().primaryKey(),
   video_name: varchar("name", { length: 255 }).notNull(),
   genre: varchar("genre", { length: 255 }).notNull(),
   blob_ref: text("reference").notNull(),
   userName: varchar("user_name", { length: 255 }).notNull(),
   embedding: vector("embedding", { dimensions: 1536 }),
-  likes: integer("likes").default(0).notNull(), // Number of likes
+  likes: integer("likes").default(0).notNull(),
   comments: json("comments").default([]).notNull(),
+});
+
+export const users = pgTable("users", {
+  user_id: uuid("user_id").defaultRandom().primaryKey(),
+  userName: varchar("user_name", { length: 255 }).notNull(),
+  interests: json("interests").default([]).notNull(),
 });
 
 export default defineConfig({
@@ -31,3 +36,5 @@ export default defineConfig({
     url: process.env.DATABASE_URL!,
   },
 });
+
+export const video_db = drizzle(process.env.DATABASE_URL!);

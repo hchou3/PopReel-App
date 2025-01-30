@@ -1,25 +1,20 @@
-import fs from "fs";
 import Groq from "groq-sdk";
 
-type Uploadable = File | Blob;
-
 // Initialize the Groq client
-const groq = new Groq();
+const groq_api_key = process.env.GROQ_API_KEY || "";
+console.log("GROQ_API_KEY:", groq_api_key); // Double-check it's not undefined
 
-export async function generate_transcript(video: Uploadable) {
+const groq = new Groq({ apiKey: groq_api_key, dangerouslyAllowBrowser: true });
+
+export async function generate_transcript(reel: File): Promise<string> {
   const transcription = await groq.audio.transcriptions.create({
-    file: video as File,
+    file: reel,
     model: "whisper-large-v3-turbo",
     prompt: "Specify context or spelling",
     response_format: "json",
     language: "en",
     temperature: 0.0,
   });
-
+  console.log("Transcription:", transcription.text);
   return transcription.text;
-}
-
-export async function generate_embeddings(video: Uploadable) {
-  const transcript = generate_transcript(video);
-  const pre_embedding = "";
 }
