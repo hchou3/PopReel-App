@@ -11,13 +11,21 @@ export const completeOnboarding = async (formData: FormData) => {
   }
 
   try {
+    const interests: string[] = [];
+    const entries = Array.from(formData.entries());
+    for (const [key, value] of entries) {
+      if (key.startsWith("interests[")) {
+        interests.push(value as string);
+      }
+    }
     await client.users.updateUser(userId, {
       publicMetadata: {
         onboardingComplete: true,
-        applicationName: formData.get("applicationName"),
-        applicationType: formData.get("applicationType"),
+        username: formData.get("username") as string, // Store username in metadata
+        interests, // Store interests in metadata
       },
     });
+
     return { message: "User metadata Updated" };
   } catch (e) {
     console.log("error", e);
