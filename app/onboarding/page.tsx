@@ -5,8 +5,6 @@ import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { completeOnboarding } from "./_actions";
-import { video_db, users } from "../db/schema";
-import { eq } from "drizzle-orm";
 
 const videoCategories = [
   "Comedy",
@@ -15,7 +13,9 @@ const videoCategories = [
   "Gaming",
   "Education",
   "Lifestyle",
+  "Fashion",
   "Food",
+  "Politics",
   "Travel",
   "Tech",
 ];
@@ -30,7 +30,7 @@ export default function OnboardingComponent() {
     setSelectedCategories((prev) => {
       if (prev.includes(category)) {
         return prev.filter((c) => c !== category);
-      } else if (prev.length < 3) {
+      } else if (prev.length < 5) {
         return [...prev, category];
       } else {
         return prev;
@@ -46,22 +46,7 @@ export default function OnboardingComponent() {
       formData.append(`interests[${index}]`, category);
     });
 
-    const existingUser = await video_db
-      .select()
-      .from(users)
-      .where(eq(users.userName, username)) // Use the correct property name
-      .execute();
-
-    if (existingUser) {
-      alert("Username already exists. Please choose a different username.");
-      return;
-    }
-
     await completeOnboarding(formData);
-    await video_db
-      .insert(users)
-      .values({ userName: user?.username ?? "", interests: selectedCategories })
-      .execute();
 
     await user?.reload();
     router.push("/dashboard");
@@ -71,7 +56,7 @@ export default function OnboardingComponent() {
       <div className="mx-auto max-w-sm overflow-hidden rounded-lg bg-white shadow-lg">
         <div className="p-8">
           <h3 className="text-xl font-semibold text-gray-900">
-            Select Your Top 3 Interests
+            Select Your Top 5 Interests
           </h3>
         </div>
         <form onSubmit={handleSubmit}>

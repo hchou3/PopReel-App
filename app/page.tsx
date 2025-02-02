@@ -2,54 +2,71 @@
 import { SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
 import { ClerkProvider } from "@clerk/clerk-react";
 import "./home.css";
-import { drizzle } from "drizzle-orm/node-postgres";
 import React, { useState } from "react";
-import { v4 as uuidv4 } from "uuid";
-import { generate_transcript } from "./components/generate-embeddings";
 
 const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 export default function Home() {
-  const [state, setState] = useState("ready");
   const [video, setVideo] = useState<File | null>(null);
   const [videoName, setVideoName] = useState<string | null>(null);
 
-  async function handleOnSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleOnSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const caption = formData.get("caption") as string;
     if (!video) {
-      console.log("No video file selected.");
-      return;
+      throw new Error("Missing file upload");
     }
 
-    if (video.type !== "video/mp4") {
-      console.log("Invalid file type. Please select a video file."); //Upload a video to the website through a button
-      return;
+    if (!caption) {
+      throw new Error("Missing caption");
+    }
+
+    if (!video.type.startsWith("video/")) {
+      throw new Error("Invalid file type.");
     }
     setVideoName(video.name);
-    console.log("uploaded video:", video.name);
-    setState("set");
+    console.log("Video:", video, video.type);
+    console.log(caption);
 
     const base64 = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () =>
-        resolve(reader.result?.toString().split(",")[1] || "");
+      reader.onload = () => {
+        if (reader.result && typeof reader.result === "string") {
+          resolve(reader.result.split(",")[1] || "");
+        } else {
+          reject(new Error("Failed to convert video to Base64"));
+        }
+      };
       reader.onerror = reject;
       reader.readAsDataURL(video);
     });
 
-    const response = await fetch("/api/upload-videos", {
-      //Add video to blob
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        file: base64,
-        contentType: video.type,
-      }),
-    });
+    console.log("Base64:", base64);
 
-    console.log(response);
+    try {
+      const response = await fetch("/api/upload-videos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          file: base64,
+          contentType: video.type,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `HTTP error!: ${response.status}, Please log in and try again.`
+        );
+      }
+
+      const data = await response.json();
+      console.log("Upload successful:", data);
+    } catch (error) {
+      console.error("Error uploading video:", error);
+    }
   }
 
   const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,9 +83,25 @@ export default function Home() {
       <main className="bg-[#FAFAFA] relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <SignedIn>
-            <button className="px-4 py-2 rounded-full bg-[#131316] text-white text-sm font-semibold">
-              Upload Video
-            </button>
+            <form onSubmit={handleOnSubmit} className="w-full mt-4">
+              <input type="file" onChange={handleOnChange} />
+              <input
+                type="text"
+                name="caption"
+                placeholder="Enter video caption"
+              />
+              <button
+                type="submit"
+                className="mt-2 px-4 py-2 rounded-full bg-[#131316] text-white text-sm font-semibold"
+              >
+                Submit Video
+              </button>
+            </form>
+            {videoName && (
+              <div className="mt-4 text-sm text-gray-700">
+                <strong>Uploaded Video:</strong> {videoName}
+              </div>
+            )}
           </SignedIn>
           <SignedOut>
             <SignInButton>
@@ -76,22 +109,22 @@ export default function Home() {
                 Sign in
               </button>
             </SignInButton>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <form onSubmit={handleOnSubmit} className="w-full">
-                <input type="file" onChange={handleOnChange} />
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-full bg-[#131316] text-white text-sm font-semibold"
-                >
-                  Submit Video
-                </button>
-              </form>
-              {videoName && (
-                <div className="mt-4 text-sm text-gray-700">
-                  <strong>Uploaded Video:</strong> {videoName}
-                </div>
-              )}
-            </div>
+            <div className="mt-20"></div>
+            <form onSubmit={handleOnSubmit} className="w-full mt-4">
+              <input type="file" onChange={handleOnChange} />
+              <input
+                type="text"
+                name="caption"
+                placeholder="Enter video caption"
+                className="mt-2 px-4 py-2 border rounded-md w-full"
+              />
+              <button
+                type="submit"
+                className="mt-2 px-4 py-2 rounded-full bg-[#131316] text-white text-sm font-semibold"
+              >
+                Submit Video
+              </button>
+            </form>
           </SignedOut>
         </div>
       </main>

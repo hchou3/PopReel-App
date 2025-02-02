@@ -1,4 +1,3 @@
-import { defineConfig } from "drizzle-kit";
 import {
   integer,
   pgTable,
@@ -17,24 +16,16 @@ export const videos = pgTable("videos", {
   genre: varchar("genre", { length: 255 }).notNull(),
   blob_ref: text("reference").notNull(),
   userName: varchar("user_name", { length: 255 }).notNull(),
-  embedding: vector("embedding", { dimensions: 1536 }),
-  likes: integer("likes").default(0).notNull(),
-  comments: json("comments").default([]).notNull(),
+  caption: text("caption").default("").notNull(),
+  summary: text("summary").default("").notNull(),
+  transcript: text("transcript").default("").notNull(),
+  embedding: vector("embedding", { dimensions: 1536 }), //video embeddings: transcriot
 });
 
 export const users = pgTable("users", {
   user_id: uuid("user_id").defaultRandom().primaryKey(),
   userName: varchar("user_name", { length: 255 }).notNull(),
   interests: json("interests").default([]).notNull(),
-});
-
-export default defineConfig({
-  out: "./drizzle",
-  schema: "./src/db/schema.ts",
-  dialect: "postgresql",
-  dbCredentials: {
-    url: process.env.DATABASE_URL!,
-  },
 });
 
 export const video_db = drizzle(process.env.DATABASE_URL!);

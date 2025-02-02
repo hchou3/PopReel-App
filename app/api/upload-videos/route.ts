@@ -3,58 +3,32 @@ import { put } from "@vercel/blob";
 import crypto from "crypto";
 import { video_db, videos } from "../../db/schema";
 
-interface ReelData {
-  id: string;
-  video_name: string;
-  genre: string;
-  blob_ref: string;
-  userName: string;
-  embedding?: number[] | null;
-  likes: number;
-  comments: any[];
-}
-
-async function createReel(data: Omit<ReelData, "id">): Promise<ReelData> {
-  const newReel = await video_db
-    .insert(videos)
-    .values({
-      video_name: data.video_name,
-      genre: data.genre,
-      blob_ref: data.blob_ref,
-      userName: data.userName,
-      embedding: data.embedding,
-      likes: data.likes,
-      comments: data.comments,
-    })
-    .returning();
-
-  return { ...newReel[0], comments: newReel[0].comments as any[] };
-}
-
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { file, contentType } = body;
-    console.log("Uploading video:", file.name);
+    console.log("Processing video upload request:", file.name);
 
     const fileBuffer = Buffer.from(file, "base64");
-    const filename = `videos/${crypto.randomUUID()}.mp4`;
+    const filename = `videos/${crypto.randomUUID()}.${contentType}`;
+    console.log("creating filebuffer and putting into: " + filename);
 
-    console.log(filename);
     const blob = await put(filename, fileBuffer, {
       access: "public",
       contentType: contentType,
     });
 
-    const reel = await createReel({
+    const reel = {
       video_name: file.name,
       genre: "",
       blob_ref: blob.url,
       userName: "",
+      summary: "",
+      transcript: "",
       embedding: null,
-      likes: 0,
-      comments: [],
-    });
+    };
+
+    await video_db.insert(videos).values(reel).returning();
 
     return NextResponse.json({
       success: true,
